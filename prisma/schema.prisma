@@ -1,0 +1,195 @@
+// ClauseKeeper — Prisma schema
+// This is the single source of truth for data shape. Feature code inherits
+// these types via `@prisma/client` — never redefine shapes ad hoc elsewhere.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  owner
+  admin
+  member
+  viewer
+}
+
+enum ContractStatus {
+  draft
+  active
+  expiring
+  expired
+  terminated
+}
+
+enum MilestoneStatus {
+  pending
+  in_progress
+  done
+  overdue
+}
+
+enum ClauseType {
+  payment_terms
+  termination
+  auto_renewal
+  liability_cap
+  other
+}
+
+enum RiskLevel {
+  low
+  medium
+  high
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  passwordHash  String?
+  name          String
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  memberships   Membership[]
+  activityLogs  ActivityLog[]
+  createdContracts Contract[] @relation("ContractCreatedBy")
+
+  @@map("users")
+}
+
+model Organization {
+  id        String       @id @default(cuid())
+  name      String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  memberships Membership[]
+  clients     Client[]
+  contracts   Contract[]
+  activityLogs ActivityLog[]
+
+  @@map("organizations")
+}
+
+model Membership {
+  id     String @id @default(cuid())
+  userId String
+  orgId  String
+  role   Role   @default(member)
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+  @@map("memberships")
+}
+
+model Client {
+  id           String   @id @default(cuid())
+  orgId        String
+  name         String
+  contactEmail String?
+  contactName  String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  contracts Contract[]
+
+  @@index([orgId])
+  @@map("clients")
+}
+
+model Contract {
+  id                String         @id @default(cuid())
+  orgId             String
+  clientId          String
+  title             String
+  status            ContractStatus @default(draft)
+  startDate         DateTime
+  endDate           DateTime?
+  autoRenews        Boolean        @default(false)
+  renewalNoticeDays Int?
+  valueAmount       Decimal?       @db.Decimal(12, 2)
+  valueCurrency     String         @default("USD")
+  fileUrl           String?
+  createdById       String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  deletedAt         DateTime?
+
+  org         Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  client      Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  createdBy   User          @relation("ContractCreatedBy", fields: [createdById], references: [id])
+  milestones  Milestone[]
+  clauseFlags ClauseFlag[]
+
+  @@index([orgId])
+  @@index([clientId])
+  @@index([orgId, status])
+  @@index([orgId, endDate])
+  @@map("contracts")
+}
+
+model ClauseFlag {
+  id            String     @id @default(cuid())
+  contractId    String
+  clauseType    ClauseType
+  extractedText String
+  riskLevel     RiskLevel  @default(medium)
+  aiConfidence  Float?
+  dismissed     Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@map("clause_flags")
+}
+
+model Milestone {
+  id         String          @id @default(cuid())
+  contractId String
+  title      String
+  dueDate    DateTime
+  status     MilestoneStatus @default(pending)
+  amount     Decimal?        @db.Decimal(12, 2)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([contractId, dueDate])
+  @@map("milestones")
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  orgId      String
+  actorId    String
+  entityType String
+  entityId   String
+  action     String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  actor User         @relation(fields: [actorId], references: [id])
+
+  @@index([orgId, createdAt])
+  @@index([entityType, entityId])
+  @@map("activity_logs")
+}

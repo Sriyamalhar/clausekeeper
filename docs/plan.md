@@ -1,0 +1,62 @@
+# ClauseKeeper — Project Plan
+
+## One-line pitch
+Contract and deliverable tracking for freelancers and small agencies, with an AI assistant that reads an uploaded contract and flags the terms that actually matter — payment schedule, termination notice, auto-renewal, liability caps — so nothing gets missed in a 20-page PDF nobody has time to reread.
+
+## Problem
+Freelancers and small agencies manage client contracts in scattered PDFs, email threads, and spreadsheets. Key dates (payment due, renewal deadline, notice period) get missed because nobody re-reads a signed contract until something goes wrong. There's no single place that ties a contract to its deliverables, its payment terms, and a calendar of what's coming due.
+
+## Who it's for
+Solo freelancers and small agency owners (2–10 people) juggling multiple concurrent client contracts.
+
+## Core entities
+
+- **User** — id, email, passwordHash, name, role (owner/admin/member/viewer), createdAt
+- **Organization** — id, name, ownerId, createdAt (supports multi-user agencies)
+- **Membership** — userId, orgId, role (join table for RBAC)
+- **Client** — id, orgId, name, contactEmail, contactName, notes, createdAt
+- **Contract** — id, orgId, clientId, title, status (draft/active/expiring/expired/terminated), startDate, endDate, autoRenews (bool), renewalNoticeDays, valueAmount, valueCurrency, fileUrl, createdById, createdAt, updatedAt, deletedAt (soft delete)
+- **ClauseFlag** — id, contractId, clauseType (payment_terms/termination/auto_renewal/liability_cap/other), extractedText, riskLevel (low/medium/high), aiConfidence, createdAt — AI-extracted flags, editable/dismissable by user
+- **Milestone** — id, contractId, title, dueDate, status (pending/in_progress/done/overdue), amount (nullable, for payment milestones), createdAt
+- **ActivityLog** — id, orgId, actorId, entityType, entityId, action, metadata (json), createdAt — immutable audit trail
+
+## Core user flows (v1)
+
+1. **Sign up → create org → land on empty dashboard** with a clear "Add your first client" CTA
+2. **Add a client → add a contract** (manual entry OR upload a PDF)
+3. **Upload contract PDF → AI extracts clause flags** → user reviews flags (confirm/edit/dismiss) → flags become part of the contract record
+4. **Dashboard** shows: contracts expiring in next 30 days, overdue milestones, at-a-glance risk flags across active contracts
+5. **Contract detail page**: full info, milestones list (add/edit/complete), clause flags, activity log for that contract
+6. **Search/filter contracts** by client, status, date range; sort by end date or value
+7. **Team members** (if org has >1 user): invite via email, assign role, RBAC enforced server-side
+8. **Export**: CSV of contracts + milestones for a given date range
+
+## Out of scope for v1 (roadmap items, stated honestly in README)
+- E-signature collection
+- Multi-currency conversion / accounting integration
+- Recurring/templated contract generation
+- Mobile app (responsive web only)
+
+## Acceptance criteria (high-level, per flow)
+- A new user can go from signup to a fully created first contract with milestones in under 3 minutes with no documentation
+- Uploading a contract PDF and getting back at least payment-terms + termination flags within ~10s (or a clear loading state if longer)
+- All contract/milestone data persists across refresh and is scoped strictly to the user's org — verified by RBAC tests (a viewer from Org A can never read Org B's data, even by guessing IDs)
+- Dashboard "expiring soon" and "overdue milestones" calculations are correct against real date math (timezone-safe)
+- Every mutation shows optimistic UI or an explicit pending state — no double-submit possible
+
+## Data shape questions / assumptions (resolved)
+- Single organization per user for v1 simplicity, with room to extend (Membership table already supports multi-org, just not exposed in UI yet)
+- AI clause extraction runs server-side against the uploaded PDF text (extracted via pdf-parse), sent to Claude via API route — never exposes the API key client-side
+- File storage: uploaded contract PDFs stored via a signed-URL flow (Vercel Blob or Supabase Storage) — never stored as base64 in Postgres
+
+## Tech stack (locked)
+Next.js 14 App Router · TypeScript strict · PostgreSQL + Prisma · Auth.js (credentials + Google OAuth) · Tailwind + shadcn/ui · Zod · TanStack Query · Vercel · Vitest + Playwright
+
+## Milestone build order
+1. Schema + types (this doc → prisma schema → shared types)
+2. Auth + RBAC middleware
+3. Client + Contract CRUD (no AI yet)
+4. Milestone CRUD + dashboard aggregation queries
+5. AI clause-extraction feature (upload → parse → flag)
+6. Search/filter/pagination + polished UI states (empty/loading/error)
+7. Tests, CI, SEO/meta, docs, deploy config
