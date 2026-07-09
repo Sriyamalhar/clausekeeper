@@ -1,13 +1,18 @@
 # ClauseKeeper — Project Plan
 
 ## One-line pitch
-Contract and deliverable tracking for freelancers and small agencies, with an AI assistant that reads an uploaded contract and flags the terms that actually matter — payment schedule, termination notice, auto-renewal, liability caps — so nothing gets missed in a 20-page PDF nobody has time to reread.
+Contract, licensing, and deliverable tracking built for freelance creatives and small creative agencies — video editors, photographers, and designers — with an AI assistant that reads an uploaded client contract and flags the terms that actually bite: usage-rights scope, exclusivity, licensing renewal, payment schedule, and termination notice.
 
 ## Problem
-Freelancers and small agencies manage client contracts in scattered PDFs, email threads, and spreadsheets. Key dates (payment due, renewal deadline, notice period) get missed because nobody re-reads a signed contract until something goes wrong. There's no single place that ties a contract to its deliverables, its payment terms, and a calendar of what's coming due.
+Freelance creatives sign contracts full of licensing and usage-rights language that's easy to skim past and expensive to get wrong — a client using footage beyond the agreed scope, an exclusivity clause blocking other work, a licensing term quietly auto-renewing. Generic contract-lifecycle tools are built for legal/procurement teams at large companies; nothing lightweight exists for a solo editor or small creative studio juggling a dozen client contracts with wildly different licensing terms. Today this lives in scattered PDFs, email threads, and memory.
 
 ## Who it's for
-Solo freelancers and small agency owners (2–10 people) juggling multiple concurrent client contracts.
+Freelance video editors, photographers, and designers, and small creative agencies (2–10 people) doing client work where licensing/usage-rights terms vary contract to contract.
+
+## Niche framing (why this, not generic CLM)
+- Clause flags are tuned to this domain specifically: usage-rights scope, exclusivity, licensing renewal, in addition to the universal payment/termination terms
+- Vocabulary, empty states, and onboarding copy speak to "client work" and "deliverables," not "vendors" or "procurement"
+- This is the detail that separates it from the 10 generic contract trackers a reviewer has already seen
 
 ## Core entities
 
@@ -16,7 +21,7 @@ Solo freelancers and small agency owners (2–10 people) juggling multiple concu
 - **Membership** — userId, orgId, role (join table for RBAC)
 - **Client** — id, orgId, name, contactEmail, contactName, notes, createdAt
 - **Contract** — id, orgId, clientId, title, status (draft/active/expiring/expired/terminated), startDate, endDate, autoRenews (bool), renewalNoticeDays, valueAmount, valueCurrency, fileUrl, createdById, createdAt, updatedAt, deletedAt (soft delete)
-- **ClauseFlag** — id, contractId, clauseType (payment_terms/termination/auto_renewal/liability_cap/other), extractedText, riskLevel (low/medium/high), aiConfidence, createdAt — AI-extracted flags, editable/dismissable by user
+- **ClauseFlag** — id, contractId, clauseType (payment_terms/termination/usage_rights/exclusivity/licensing_renewal/liability_cap/other), extractedText, riskLevel (low/medium/high), aiConfidence, createdAt — AI-extracted flags, editable/dismissable by user
 - **Milestone** — id, contractId, title, dueDate, status (pending/in_progress/done/overdue), amount (nullable, for payment milestones), createdAt
 - **ActivityLog** — id, orgId, actorId, entityType, entityId, action, metadata (json), createdAt — immutable audit trail
 
@@ -24,7 +29,7 @@ Solo freelancers and small agency owners (2–10 people) juggling multiple concu
 
 1. **Sign up → create org → land on empty dashboard** with a clear "Add your first client" CTA
 2. **Add a client → add a contract** (manual entry OR upload a PDF)
-3. **Upload contract PDF → AI extracts clause flags** → user reviews flags (confirm/edit/dismiss) → flags become part of the contract record
+3. **Upload contract PDF → AI extracts clause flags** (payment terms, termination, usage-rights scope, exclusivity, licensing renewal) → user reviews flags (confirm/edit/dismiss) → flags become part of the contract record
 4. **Dashboard** shows: contracts expiring in next 30 days, overdue milestones, at-a-glance risk flags across active contracts
 5. **Contract detail page**: full info, milestones list (add/edit/complete), clause flags, activity log for that contract
 6. **Search/filter contracts** by client, status, date range; sort by end date or value

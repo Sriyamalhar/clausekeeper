@@ -20,7 +20,9 @@ export const milestoneStatusSchema = z.enum([
 export const clauseTypeSchema = z.enum([
   "payment_terms",
   "termination",
-  "auto_renewal",
+  "usage_rights",
+  "exclusivity",
+  "licensing_renewal",
   "liability_cap",
   "other",
 ]);

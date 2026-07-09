@@ -36,7 +36,9 @@ enum MilestoneStatus {
 enum ClauseType {
   payment_terms
   termination
-  auto_renewal
+  usage_rights
+  exclusivity
+  licensing_renewal
   liability_cap
   other
 }
