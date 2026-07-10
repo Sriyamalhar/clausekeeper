@@ -195,3 +195,12 @@ model ActivityLog {
   @@index([entityType, entityId])
   @@map("activity_logs")
 }
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
