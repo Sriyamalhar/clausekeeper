@@ -7,7 +7,7 @@ export default function NotFound() {
       <span className="font-mono text-sm text-ink-faint">404</span>
       <h1 className="font-display text-2xl text-ink">This page got filed somewhere else</h1>
       <p className="max-w-sm text-sm text-ink-muted">
-        The page you're looking for doesn't exist, or you don't have access to it.
+        The page you&apos;re looking for doesn&apos;t exist, or you don&apos;t have access to it.
       </p>
       <Link href="/dashboard">
         <Button>Back to dashboard</Button>

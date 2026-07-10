@@ -125,7 +125,7 @@ export default function LandingPage() {
           <div className="rounded-card border border-border bg-surface-raised p-6">
             <RiskTab level="low" label="Licensing renewal" />
             <p className="mt-4 text-sm text-ink-muted">
-              Get ahead of auto-renewal deadlines instead of discovering them after they've passed.
+              Get ahead of auto-renewal deadlines instead of discovering them after they&apos;ve passed.
             </p>
           </div>
         </section>
